@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>newAIr</title><link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<div id="app">
+<aside id="sidebar">
+  <div class="brand"><div class="brand-mark">n</div><div><h1>newAIr</h1><span>local intelligence</span></div></div>
+  <div class="mode-switch">
+    <button class="mode-btn active" data-mode="assistant">◈ Assistant</button>
+    <button class="mode-btn" data-mode="characters">♢ Characters</button>
+    <button class="mode-btn" data-mode="images">✦ Image Studio</button>
+  </div>
+
+  <section id="assistant-panel" class="side-panel">
+    <div class="side-title"><span>Assistant</span><button id="new-assistant-btn">＋</button></div>
+    <label class="side-label">Persona</label><select id="persona-select"></select>
+    <button id="manage-personas-btn" class="ghost wide">Manage personas</button>
+    <div id="assistant-conversation-list" class="scroll-list"></div>
+  </section>
+
+  <section id="character-panel" class="side-panel hidden">
+    <div class="side-title"><span>Characters</span><button id="new-char-btn">＋</button></div>
+    <label class="side-label">Persona</label><select id="character-persona-select"></select>
+    <button id="manage-character-personas-btn" class="ghost wide">Manage personas</button>
+    <div id="character-list" class="scroll-list"></div>
+  </section>
+  <div class="sidebar-footer"><button id="model-manager-btn" class="ghost wide">⚙ Model Manager</button></div>
+</aside>
+
+<main id="main">
+<section id="assistant-view" class="workspace">
+<header class="workspace-header"><div><div class="eyebrow">NORMAL AI</div><h2>newAIr Assistant</h2><span class="muted">Private, local, and yours.</span></div><button id="assistant-persona-top" class="pill">Persona: —</button></header>
+<div id="assistant-messages" class="messages"></div>
+<div class="composer"><textarea id="assistant-input" placeholder="Ask newAIr anything…" rows="1"></textarea><button id="assistant-send">Send</button></div>
+</section>
+
+<section id="character-view" class="workspace hidden">
+<header class="workspace-header">
+  <div class="chat-heading"><div id="chat-char-avatar" class="chat-avatar">?</div><div><div class="eyebrow">CHARACTER MODE</div><h2 id="chat-char-name">—</h2><span id="chat-conv-title" class="muted"></span></div></div>
+  <div class="header-actions"><button id="lore-btn">📖 Lore</button><button id="memory-btn">🧠 Memory</button><button id="new-conv-btn">＋ Chat</button><button id="edit-char-btn">✎ Character</button></div>
+</header>
+<div id="messages" class="messages"></div>
+<div class="composer"><textarea id="composer-input" placeholder="Say something…" rows="1"></textarea><div class="composer-buttons"><button id="continue-btn" class="secondary">⏵</button><button id="regen-btn" class="secondary">↻</button><button id="send-btn">Send</button></div></div>
+</section>
+
+<section id="image-view" class="workspace hidden">
+<header class="workspace-header"><div><div class="eyebrow">IMAGE STUDIO</div><h2>Local image generation</h2><span class="muted">Your image model stays on your machine.</span></div></header>
+<div class="image-studio">
+<div class="image-controls card">
+<label>Image model<select id="image-model-select"></select></label>
+<button id="load-image-model">Load model</button>
+<label>Studio mode<select id="image-edit-mode"><option value="txt2img">Text → Image</option><option value="img2img">Image → Image</option><option value="inpaint">Inpaint</option></select></label>
+<label id="source-image-field" class="hidden">Source image<input id="source-image-file" type="file" accept="image/png,image/jpeg,image/webp"></label>
+<div id="inpaint-mask-field" class="hidden">
+  <div class="section-label">Paint the area to change</div>
+  <div class="mask-editor">
+    <div id="mask-canvas-wrap" class="mask-canvas-wrap">
+      <img id="mask-source-preview" alt="Inpaint source">
+      <canvas id="inpaint-mask-canvas"></canvas>
+    </div>
+  </div>
+  <div class="mask-tools">
+    <label>Brush size<input id="inpaint-brush-size" type="range" min="5" max="180" step="1" value="55"></label>
+    <button id="inpaint-clear" type="button" class="secondary">Clear mask</button>
+    <button id="inpaint-fill" type="button" class="secondary">Fill mask</button>
+  </div>
+  <p class="field-help">Paint white over anything you want the AI to replace.</p>
+</div>
+<label id="edit-strength-field" class="hidden">Edit strength<input id="image-strength" type="range" min="0.05" max="0.95" step="0.01" value="0.55"><span id="image-strength-value">0.55</span></label>
+<label>Use image for character<select id="image-character-select"><option value="">Select a character…</option></select></label>
+<div id="image-status" class="status"></div>
+<label>Prompt<textarea id="image-prompt" rows="6" placeholder="Describe the image you want…"></textarea></label>
+<label>Negative prompt<textarea id="image-negative" rows="3" placeholder="Things to avoid…"></textarea></label>
+<div class="two-col"><label>Width<input id="image-width" type="number" value="512" min="256" step="64"></label><label>Height<input id="image-height" type="number" value="512" min="256" step="64"></label></div>
+<div class="two-col"><label>Steps<input id="image-steps" type="number" value="24" min="1" max="60"></label><label>Guidance<input id="image-guidance" type="number" value="5" step=".5"></label></div>
+<label>Seed<input id="image-seed" type="number" value="-1"></label>
+<p class="muted">RTX 3050 6GB: start at 512×512.</p><button id="generate-image" class="primary wide">Generate</button>
+</div>
+<div class="image-result card"><div id="edit-source-preview" class="hidden"><div class="section-label">Source image</div><img id="source-image-preview" alt="Source preview"></div><div id="image-placeholder"><div class="image-placeholder-icon">✦</div><h3>Your image will appear here</h3><p>Generated entirely on your machine.</p></div><img id="generated-image" class="hidden" alt="Generated locally"><div id="image-actions" class="image-actions hidden"><button id="regenerate-image">↻ Regenerate</button><button id="crop-generated-image">Crop</button><button id="use-character-image">Use for character</button></div></div>
+</div></section>
+</main>
+</div>
+
+<div id="char-modal" class="modal hidden"><div class="modal-box character-editor">
+<div class="editor-head"><div><div class="eyebrow">CHARACTER</div><h2 id="char-modal-title">New Character</h2></div><button id="char-cancel-btn" class="icon-close">×</button></div>
+<div class="editor-tabs"><button class="editor-tab active" data-tab="char-general">General</button><button class="editor-tab" data-tab="char-definition">Definition</button></div>
+<section id="char-general" class="editor-section">
+<label>Name<input id="f-name" maxlength="80" placeholder="Layla"></label>
+<label>Avatar<div class="avatar-input-row"><input id="f-avatar" placeholder="/static/generated/layla.png"><button type="button" id="crop-avatar-btn" class="secondary">Crop / fit</button></div><span class="field-help">Use a square crop to choose exactly what appears in the profile.</span></label>
+<label>Short description<textarea id="f-description" rows="3" placeholder="A short description of the character…"></textarea></label>
+<label>Tags<input id="f-tags" placeholder="family, friendly, curious"></label>
+</section>
+<section id="char-definition" class="editor-section hidden">
+<label>Personality<textarea id="f-personality" rows="6" placeholder="Describe the character's personality, behavior and speech style…"></textarea></label>
+<label>Scenario<textarea id="f-scenario" rows="5" placeholder="Describe the current situation and context…"></textarea></label>
+<label>First message<textarea id="f-greeting" rows="7" placeholder="The first message your character sends…"></textarea></label>
+<label>Example dialogue<textarea id="f-example" rows="8" placeholder="{{user}}: Hey, how are you?
+{{char}}: I'm doing pretty well."></textarea></label>
+<label>Advanced definition <span class="optional">optional</span><textarea id="f-system" rows="7" placeholder="Extra instructions or details…"></textarea></label>
+<p class="field-help"><code>{{char}}</code> becomes the character name and <code>{{user}}</code> becomes the active persona name.</p>
+</section>
+<div class="modal-actions"><button id="char-delete-btn" class="danger-btn hidden">Delete</button><span class="modal-spacer"></span><button id="char-cancel-btn-bottom" class="secondary">Cancel</button><button id="char-save-btn">Save character</button></div>
+</div></div>
+
+<div id="persona-modal" class="modal hidden"><div class="modal-box persona-editor">
+<div class="editor-head"><div><div class="eyebrow">PERSONAS</div><h2>My Personas</h2><p class="muted">Create a simple identity you can use across chats.</p></div><button id="persona-close" class="icon-close">×</button></div>
+<div class="persona-layout">
+<div><div class="section-label">Your personas</div><div id="persona-list" class="persona-list scroll-list"></div></div>
+<div class="persona-form"><div class="section-label">Persona</div><input id="p-edit-id" type="hidden">
+<label>Name<input id="p-name" placeholder="Sreeram"></label><label>Avatar<input id="p-avatar" placeholder="/static/generated/avatar.png"></label>
+<label>Short description<textarea id="p-description" rows="4" placeholder="Describe this persona…"></textarea></label>
+<label>Pronouns<input id="p-pronouns" placeholder="he/him"></label><label>Age <span class="optional">optional</span><input id="p-age" placeholder="24"></label>
+<label>Appearance <span class="optional">optional</span><textarea id="p-appearance" rows="3"></textarea></label>
+<label>Personality <span class="optional">optional</span><textarea id="p-personality" rows="3"></textarea></label>
+<label>Speaking style <span class="optional">optional</span><textarea id="p-style" rows="3" placeholder="Casual, concise, sarcastic…"></textarea></label>
+<label>Background <span class="optional">optional</span><textarea id="p-background" rows="4"></textarea></label>
+<label>Additional details <span class="optional">optional</span><textarea id="p-details" rows="3"></textarea></label>
+<div class="modal-actions"><button id="persona-new" class="secondary">New persona</button><span class="modal-spacer"></span><button id="persona-save">Save persona</button></div>
+</div></div></div></div>
+
+<div id="lore-modal" class="modal hidden"><div class="modal-box"><div class="editor-head"><h2>Lorebook</h2><button id="lore-close" class="icon-close">×</button></div><div id="lore-list" class="scroll-list small"></div><hr><label>Title<input id="lore-title"></label><label>Keywords<input id="lore-keywords" placeholder="school, apartment, family"></label><label>Content<textarea id="lore-content" rows="4"></textarea></label><div class="modal-actions"><span class="modal-spacer"></span><button id="lore-add">Add entry</button></div></div></div>
+<div id="memory-modal" class="modal hidden"><div class="modal-box"><div class="editor-head"><h2>Character memory</h2><button id="memory-close" class="icon-close">×</button></div><div id="memory-list" class="scroll-list small"></div><hr><label>New fact<input id="memory-fact" placeholder="The user's name is Sreeram"></label><div class="modal-actions"><span class="modal-spacer"></span><button id="memory-add">Add fact</button></div></div></div>
+<div id="crop-modal" class="modal hidden"><div class="modal-box crop-editor">
+<div class="editor-head"><div><div class="eyebrow">PROFILE IMAGE</div><h2>Crop image</h2><p class="muted">Drag the image, then zoom until the framing looks right.</p></div><button id="crop-close" class="icon-close">×</button></div>
+<div class="crop-stage" id="crop-stage"><img id="crop-source" alt="Crop preview"></div>
+<div class="crop-controls"><label>Zoom<input id="crop-zoom" type="range" min="1" max="3" step="0.01" value="1"></label><button id="crop-reset" class="secondary">Reset</button></div>
+<div class="modal-actions"><span class="modal-spacer"></span><button id="crop-cancel" class="secondary">Cancel</button><button id="crop-apply">Apply crop</button></div>
+</div></div>
+
+<div id="model-modal" class="modal hidden"><div class="modal-box"><div class="editor-head"><h2>LLM Model Manager</h2><button id="model-close" class="icon-close">×</button></div><p class="muted">Drop GGUF models into <code id="models-dir-path"></code>.</p><div id="model-list" class="scroll-list small"></div><p id="model-loaded" class="status"></p></div></div>
+<script src="/static/js/app.js"></script>
+</body></html>

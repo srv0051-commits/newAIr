@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Local secrets
+.env
+
+# AI model files
+*.gguf
+*.safetensors
+*.ckpt
+*.bin
+
+# Generated images
+static/generated/*
