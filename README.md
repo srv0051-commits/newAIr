@@ -77,7 +77,7 @@ load the `.gguf` file you placed in `models_dir/`.
   character-specific or global.
 - **Memory**: two tiers —
   - *Character memory* (🧠 button): durable facts always included,
-    never summarized away (e.g. "user's name is Sreeram").
+    never summarized away (e.g. "user's name is John").
   - *Conversation memory*: automatic — once a chat passes
     `SUMMARIZE_EVERY_N_MESSAGES` (config.py), the oldest messages are
     compressed into a running summary by the model itself, keeping
