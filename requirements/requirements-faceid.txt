@@ -1,0 +1,4 @@
+# Face -> Full Scene dependencies
+insightface
+onnxruntime-gpu
+# buffalo_l is a separately downloaded InsightFace model pack, not a pip package.

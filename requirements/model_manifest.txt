@@ -1,0 +1,27 @@
+Known local models / assets to restore if needed
+
+IMAGE CHECKPOINTS
+- image_models\\CyberRealisticPony_V18.0_F16.safetensors (Pony/SDXL family)
+- image_models\\RealVisXL_V5.0_F16.safetensors (SDXL)
+- image_models\\realisticVisionV60B1_v51VAE.safetensors (SD 1.5)
+- image_models\\inpainting\\Realistic_Vision_V6.0_NV_B1_inpainting_fp16.safetensors (inpainting checkpoint; path may vary)
+
+TEXT
+- Dolphin3.0-Llama3.1-8B-Q4_K_M.gguf
+
+IP-ADAPTER FACEID PLUS V2, SD1.5
+- ip-adapter-faceid-plusv2_sd15.bin
+- ip-adapter-faceid-plusv2_sd15_lora.safetensors
+
+IP-ADAPTER FACEID PLUS V2, SDXL (if downloaded)
+- ip-adapter-faceid-plusv2_sdxl.bin
+- ip-adapter-faceid-plusv2_sdxl_lora.safetensors
+
+CLIP IMAGE ENCODER
+- image_encoder\\config.json
+- image_encoder\\model.safetensors (about 2.53 GB)
+
+INSIGHTFACE
+- buffalo_l, normally at `%USERPROFILE%\\.insightface\\models\\buffalo_l\\`
+
+These weights are not pip requirements. Keep them out of Git; download them locally when resuming. Check the current `config.py` and model manager for the exact expected paths before restoring.

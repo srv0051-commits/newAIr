@@ -1,0 +1,3 @@
+# Local GGUF text model runtime
+# A default pip install may be CPU-only. Record the current working build first.
+llama-cpp-python

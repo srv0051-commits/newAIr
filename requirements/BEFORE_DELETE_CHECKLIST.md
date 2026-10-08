@@ -1,0 +1,11 @@
+# Before deleting large files
+- [ ] Stop newAIr with Ctrl+C.
+- [ ] Back up `data\\newair.db`.
+- [ ] If present, back up `data\\newair.db-wal` and `data\\newair.db-shm` while the app is stopped.
+- [ ] Keep `.env` privately if it is used.
+- [ ] Keep the source code and this `requirements` folder.
+- [ ] Capture `pip freeze`, `pip list --format=json`, `python --version`, `nvidia-smi`, and relevant `pip show` output.
+- [ ] Verify `.gitignore` excludes database files, `.env`, model weights, generated images, and `venv`.
+- [ ] Check `git status` before any commit.
+- [ ] Remove model weights/caches and the venv only after the above.
+- [ ] Do not uninstall the NVIDIA graphics driver.

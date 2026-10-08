@@ -1,0 +1,13 @@
+# Starter list, not an exact lockfile.
+# Exact installed versions were not captured, so don't trust guessed pins.
+Flask
+Werkzeug
+Pillow
+numpy
+pandas
+safetensors
+huggingface-hub
+transformers
+accelerate
+diffusers
+peft
