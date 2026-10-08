@@ -14,12 +14,27 @@ data/janitor_proxy_key.txt
 
 # Local database
 data/*.db
-
+data/newair.db
+data/newair.db-wal
+data/newair.db-shm
+data_backup*/
+*.sqlite
+*.sqlite3
 # AI model files
 *.gguf
 *.safetensors
 *.ckpt
+*.pt
+*.pth
+*.onnx
 *.bin
-
 # Generated images
-static/generated/*
+static/generated/
+outputs/
+.cache/
+huggingface/
+.insightface/
+models/
+image_models/
+loras/
+*.log

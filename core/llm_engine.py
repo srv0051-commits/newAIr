@@ -68,6 +68,7 @@ class LLMEngine:
         self._llm = None
         self._model_path = None
         self._lock = threading.Lock()
+        self.last_error = ""
 
     @property
     def is_loaded(self):
@@ -92,29 +93,72 @@ class LLMEngine:
             gc.collect()
 
     def load_model(self, path):
+        """Load a GGUF safely, releasing the previous model first.
+
+        Loading a second 8B GGUF while the first one is still resident can
+        exhaust VRAM/RAM and llama.cpp often reports only the vague
+        "Failed to load model from file" error. Validate the file and retry
+        once on CPU when a GPU-specific load fails.
+        """
         with self._lock:
             if not path:
-                self._llm = MockLlama()
-                self._model_path = "(mock)"
-                return self._model_path
-
+                self._llm = MockLlama(); self._model_path = "(mock)"; self.last_error = ""; return self._model_path
             if not LLAMA_CPP_AVAILABLE:
-                raise RuntimeError(
-                    "llama-cpp-python could not be loaded. "
-                    f"{LLAMA_CPP_ERROR}"
-                )
-
+                raise RuntimeError("llama-cpp-python could not be loaded. " + LLAMA_CPP_ERROR)
             if not os.path.isfile(path):
                 raise FileNotFoundError(f"Model file not found: {path}")
+            size=os.path.getsize(path)
+            if size < 100*1024*1024:
+                raise RuntimeError(f"GGUF file is only {size/1048576:.1f} MB. It is probably incomplete or corrupted: {os.path.basename(path)}")
+            try:
+                with open(path,"rb") as fh:
+                    magic=fh.read(4)
+                if magic != b"GGUF":
+                    raise RuntimeError(f"The selected file is not a valid GGUF file (header={magic!r}). Re-download it: {os.path.basename(path)}")
+            except OSError as exc:
+                raise RuntimeError(f"Could not read model file: {exc}") from exc
 
-            self._llm = Llama(
-                model_path=path,
-                n_ctx=config.N_CTX,
-                n_gpu_layers=config.N_GPU_LAYERS,
-                n_threads=config.N_THREADS,
-                verbose=False,
-            )
-            self._model_path = path
+            old=self._llm
+            self._llm=None; self._model_path=None
+            if old is not None:
+                try: del old
+                except Exception: pass
+            import gc; gc.collect()
+            try:
+                import torch
+                if torch.cuda.is_available(): torch.cuda.empty_cache(); torch.cuda.ipc_collect()
+            except Exception: pass
+
+            kwargs=dict(model_path=path,n_ctx=config.N_CTX,n_gpu_layers=config.N_GPU_LAYERS,n_threads=config.N_THREADS,verbose=False)
+            try:
+                self._llm=Llama(**kwargs)
+            except Exception as first_exc:
+                self._llm=None; gc.collect()
+                try:
+                    import torch
+                    if torch.cuda.is_available(): torch.cuda.empty_cache(); torch.cuda.ipc_collect()
+                except Exception: pass
+                if config.N_GPU_LAYERS != 0:
+                    try:
+                        cpu_kwargs=dict(kwargs); cpu_kwargs["n_gpu_layers"]=0
+                        self._llm=Llama(**cpu_kwargs)
+                        self._model_path=path
+                        self.last_error=(f"GPU load failed for {os.path.basename(path)}; loaded on CPU instead. "
+                                         f"Original error: {type(first_exc).__name__}: {first_exc}")
+                        return self._model_path
+                    except Exception as cpu_exc:
+                        self._llm=None
+                        self.last_error=(f"Could not load {os.path.basename(path)}. "
+                                         f"GPU attempt: {type(first_exc).__name__}: {first_exc}. "
+                                         f"CPU retry: {type(cpu_exc).__name__}: {cpu_exc}. "
+                                         "The GGUF may be incomplete, incompatible with this llama.cpp build, "
+                                         "or the system may not have enough RAM/VRAM.")
+                        raise RuntimeError(self.last_error) from cpu_exc
+                self.last_error=(f"Could not load {os.path.basename(path)}: {type(first_exc).__name__}: {first_exc}. "
+                                 "The GGUF may be incomplete, incompatible with this llama.cpp build, "
+                                 "or the system may not have enough RAM/VRAM.")
+                raise RuntimeError(self.last_error) from first_exc
+            self._model_path=path; self.last_error=""
         return self._model_path
 
     def prepare_for_text(self):

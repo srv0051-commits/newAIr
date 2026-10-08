@@ -20,6 +20,7 @@ def list_models():
         "llama_cpp_error": LLAMA_CPP_ERROR,
         "gpu_layers": config.N_GPU_LAYERS,
         "context_tokens": config.N_CTX,
+        "last_load_error": getattr(engine, "last_error", ""),
     })
 
 
@@ -32,5 +33,8 @@ def load_model():
     path = os.path.join(config.MODELS_DIR, filename)
     if not os.path.isfile(path):
         abort(404, f"{filename} not found in {config.MODELS_DIR}")
-    loaded = engine.load_model(path)
-    return jsonify({"loaded": loaded})
+    try:
+        loaded = engine.load_model(path)
+        return jsonify({"loaded": loaded, "message": f"Loaded {os.path.basename(loaded)}", "load_warning": engine.last_error or None})
+    except Exception as exc:
+        return jsonify({"error": "model_load_failed", "message": str(exc), "filename": filename}), 500

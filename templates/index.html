@@ -27,7 +27,7 @@
     <button id="manage-character-personas-btn" class="ghost wide">Manage personas</button>
     <div id="character-list" class="scroll-list"></div>
   </section>
-  <div class="sidebar-footer"><button id="model-manager-btn" class="ghost wide">⚙ Model Manager</button></div>
+  <div class="sidebar-footer"><button id="export-project-btn" class="ghost wide">⇩ Export project</button><button id="model-manager-btn" class="ghost wide">⚙ Model Manager</button></div>
 </aside>
 
 <main id="main">
@@ -40,70 +40,246 @@
 <section id="character-view" class="workspace hidden">
 <header class="workspace-header">
   <div class="chat-heading"><div id="chat-char-avatar" class="chat-avatar">?</div><div><div class="eyebrow">CHARACTER MODE</div><h2 id="chat-char-name">—</h2><span id="chat-conv-title" class="muted"></span></div></div>
-  <div class="header-actions"><button id="lore-btn">📖 Lore</button><button id="memory-btn">🧠 Memory</button><button id="new-conv-btn">＋ Chat</button><button id="edit-char-btn">✎ Character</button></div>
+  <div class="header-actions"><button id="chat-settings-btn">⚙ Chat settings</button><button id="lore-btn">📖 Lore</button><button id="memory-btn">🧠 Memory</button><button id="new-conv-btn">＋ Chat</button><button id="edit-char-btn">✎ Character</button></div>
 </header>
 <div id="messages" class="messages"></div>
-<div class="composer"><textarea id="composer-input" placeholder="Say something…" rows="1"></textarea><div class="composer-buttons"><button id="continue-btn" class="secondary">⏵</button><button id="regen-btn" class="secondary">↻</button><button id="send-btn">Send</button></div></div>
+<div class="composer"><div class="composer-ai-wrap"><button id="chat-ai-btn" class="composer-ai" title="Writing tools">✦</button><div id="chat-ai-menu" class="chat-ai-menu hidden"><button data-ai-action="enhance">Enhance my draft</button><button data-ai-action="write">Write something for me</button><button data-ai-action="summarize">Summarize this chat</button></div></div><div class="composer-input-wrap"><textarea id="composer-input" placeholder="Say something…  Use *asterisks* for actions." rows="1"></textarea><div class="roleplay-format-tip">Normal text = speaking · <em>*text*</em> = doing/action</div></div><div class="composer-buttons"><button id="continue-btn" class="secondary" title="Continue">⏵</button><button id="regen-btn" class="secondary" title="Regenerate">↻</button><button id="send-btn">Send</button></div></div>
 </section>
 
 <section id="image-view" class="workspace hidden">
-<header class="workspace-header"><div><div class="eyebrow">IMAGE STUDIO</div><h2>Local image generation</h2><span class="muted">Your image model stays on your machine.</span></div></header>
+<header class="workspace-header image-header">
+  <div><div class="eyebrow">IMAGE STUDIO PRO</div><h2>Local image generation</h2><span class="muted">Diffusion, remixing and character-aware creation, entirely local.</span></div>
+  <div class="studio-stats"><span id="gpu-chip" class="status-chip">GPU: —</span><span id="model-chip" class="status-chip">Model: —</span></div>
+</header>
 <div class="image-studio">
 <div class="image-controls card">
+<div class="control-section engine-section"><div class="section-title">Engine</div>
 <label>Image model<select id="image-model-select"></select></label>
-<button id="load-image-model">Load model</button>
-<label>Studio mode<select id="image-edit-mode"><option value="txt2img">Text → Image</option><option value="img2img">Image → Image</option><option value="inpaint">Inpaint</option></select></label>
-<label id="source-image-field" class="hidden">Source image<input id="source-image-file" type="file" accept="image/png,image/jpeg,image/webp"></label>
-<div id="inpaint-mask-field" class="hidden">
-  <div class="section-label">Paint the area to change</div>
-  <div class="mask-editor">
-    <div id="mask-canvas-wrap" class="mask-canvas-wrap">
-      <img id="mask-source-preview" alt="Inpaint source">
-      <canvas id="inpaint-mask-canvas"></canvas>
+<div class="two-col"><button id="load-image-model" class="primary">Load model</button><button id="refresh-image-models" class="secondary">Refresh</button></div>
+<div id="image-status" class="status"></div></div>
+
+<div class="studio-tabs" role="tablist">
+  <button class="studio-tab active" data-studio-tab="character" role="tab">Character &amp; Scene</button>
+  <button class="studio-tab" data-studio-tab="normal" role="tab">Normal Prompt</button>
+  <button class="studio-tab" data-studio-tab="img2img" role="tab">Image to Image</button>
+  <button class="studio-tab" data-studio-tab="faceid" role="tab">Face → Full Scene</button>
+  <button class="studio-tab" data-studio-tab="inpaint" role="tab">Inpaint</button>
+</div>
+
+<div id="studio-character-panel" class="studio-panel">
+  <div class="control-section">
+    <div class="section-title">Character image</div>
+    <p class="field-help">Generate a portrait directly from the character definition. No image prompt required.</p>
+    <label>Character<select id="image-character-select"><option value="">Select a character…</option></select></label>
+    <div class="two-col"><button id="build-character-prompt" class="secondary">Preview visual prompt</button><button id="generate-character-image" class="primary">✦ Generate portrait</button></div>
+    <div id="character-image-status" class="status"></div>
+  </div>
+  <div class="control-section">
+    <div class="section-title">Scenario image</div>
+    <p class="field-help">Put the character into a location, pose and situation while keeping their identity block.</p>
+    <button id="scene-builder-btn" class="secondary wide">Build character scenario</button>
+    <button id="generate-scene-image" class="primary wide">✦ Generate scenario image</button>
+    <div id="scene-image-status" class="status"></div>
+  </div>
+  <div class="control-section">
+    <div class="section-title">Character LoRAs</div>
+    <label>LoRAs<select id="image-lora-select" multiple size="3"></select></label>
+    <div id="lora-sliders" class="lora-sliders"></div>
+  </div>
+</div>
+
+<div id="studio-img2img-panel" class="studio-panel hidden">
+  <div class="control-section">
+    <div class="section-title">Source image</div>
+    <p class="field-help">Upload a photo or use the current generated image. Start with Preserve or Balanced to keep the original composition stable.</p>
+    <label class="upload-drop" id="img2img-drop">
+      <input id="img2img-file" type="file" accept="image/png,image/jpeg,image/webp">
+      <span class="upload-icon">＋</span><strong>Choose an image</strong><span class="field-help">PNG, JPG or WebP</span>
+    </label>
+    <div class="two-col"><button id="img2img-use-current" class="secondary">Use current image</button><button id="img2img-clear" class="secondary">Clear</button></div>
+    <div id="img2img-source-status" class="status"></div>
+    <img id="img2img-source-thumb" class="img2img-thumb hidden" alt="Source preview">
+  </div>
+  <div class="control-section">
+    <div class="section-title">Edit instruction</div>
+    <label>Edit goal<select id="img2img-edit-mode">
+      <option value="general">General edit</option><option value="background">Change background / location</option><option value="clothing">Change clothing</option><option value="relight">Relight only</option><option value="restyle">Restyle image</option><option value="full_body">Rebuild composition</option>
+    </select></label>
+    <label>Style<select id="img2img-style"><option value="photorealistic">Photorealistic</option><option value="cinematic">Cinematic</option><option value="editorial">Editorial</option><option value="digital_illustration">Digital illustration</option><option value="pencil_drawing">Pencil drawing</option><option value="watercolor">Watercolor</option><option value="comic">Comic</option><option value="anime_inspired">Anime-inspired</option><option value="fantasy_art">Fantasy concept art</option></select></label>
+    <label>What should change?<textarea id="img2img-prompt" rows="5" placeholder="Move the person to a rainy Tokyo street while preserving identity, face, hair and clothing."></textarea></label>
+    <div class="prompt-tools"><button id="img2img-optimize" class="secondary">✦ Optimize with Dolphin</button><button id="img2img-copy-prompt" class="secondary">Copy from Normal</button></div>
+    <label>Negative prompt<textarea id="img2img-negative" rows="3" placeholder="Optional. newAIr adds a safety baseline automatically."></textarea></label>
+  </div>
+  <div class="control-section">
+    <div class="section-title">How much should change?</div>
+    <div class="preset-row img2img-presets"><button class="img2img-preset active" data-img2img-preset="preserve">Preserve</button><button class="img2img-preset" data-img2img-preset="balanced">Balanced</button><button class="img2img-preset" data-img2img-preset="creative">Creative</button></div>
+    <div class="strength-row"><input id="img2img-strength" type="range" min="0.10" max="0.75" value="0.28" step="0.01"><strong id="img2img-strength-value">0.28</strong></div>
+    <p id="img2img-strength-help" class="field-help">Preserve: keeps the source composition, identity and details as stable as possible.</p>
+    <p class="field-help">Source aspect ratio is preserved automatically.</p>
+  </div>
+  <div class="control-section">
+    <div class="section-title">Quality</div>
+    <div class="two-col"><label>Steps<input id="img2img-steps" type="number" value="24" min="8" max="50"></label><label>Guidance<input id="img2img-guidance" type="number" value="5.0" min="3.5" max="8" step=".5"></label></div>
+    <label>Sampler<select id="img2img-sampler"></select></label>
+    <label>Seed<div class="seed-row"><input id="img2img-seed" type="number" value="-1"><button id="img2img-random-seed" class="secondary">Random</button></div></label>
+  </div>
+  <div class="two-col"><button id="img2img-generate" class="primary wide generate-big">✦ Apply edit</button><button id="img2img-outpaint" class="secondary wide">↕ Extend / Full body</button></div>
+  <p class="field-help">For precise clothing/background edits, use Inpaint and paint only the area to replace. For a cropped portrait, Extend / Full body adds new canvas below the image while preserving the original pixels.</p><div id="img2img-status" class="status"></div>
+</div>
+
+<div id="studio-faceid-panel" class="studio-panel hidden">
+  <div class="control-section">
+    <div class="section-title">Face reference</div>
+    <p class="field-help">Upload a face. newAIr generates the body, clothes, pose and environment from your prompt while using the face as the identity reference.</p>
+    <label class="upload-drop" id="faceid-drop"><input id="faceid-file" type="file" accept="image/png,image/jpeg,image/webp"><span class="upload-icon">＋</span><strong>Choose face image</strong><span class="field-help">One clear face works best</span></label>
+    <div id="faceid-source-status" class="status">No face reference selected.</div><img id="faceid-source-thumb" class="img2img-thumb hidden" alt="Face reference preview">
+  </div>
+  <div class="control-section">
+    <div class="section-title">Generation model</div>
+    <label>Model<select id="faceid-model"></select></label>
+    <div id="faceid-model-help" class="field-help">FaceID adapter availability is checked for each model family.</div>
+  </div>
+  <div class="control-section">
+    <div class="section-title">Scene</div>
+    <label>Style<select id="faceid-style"><option value="photorealistic">Photorealistic</option><option value="cinematic">Cinematic</option><option value="editorial">Editorial</option><option value="digital_illustration">Digital illustration</option><option value="anime_inspired">Anime-inspired</option><option value="fantasy_art">Fantasy concept art</option></select></label>
+    <label>What should the person be doing?<textarea id="faceid-prompt" rows="6" placeholder="Full-body photograph of the person standing barefoot on a tropical beach at sunset, wearing a loose white linen shirt and beige trousers, natural relaxed pose, ocean behind them."></textarea></label>
+    <label>Negative prompt<textarea id="faceid-negative" rows="3" placeholder="Optional. newAIr adds an anatomy-safe baseline automatically."></textarea></label>
+  </div>
+  <div class="control-section">
+    <div class="section-title">Identity &amp; quality</div>
+    <label>Identity strength<div class="strength-row"><input id="faceid-strength" type="range" min="0.40" max="1.30" value="0.90" step="0.05"><strong id="faceid-strength-value">0.90</strong></div></label>
+    <div class="two-col"><label>Width<input id="faceid-width" type="number" value="512" min="512" max="1024" step="64"></label><label>Height<input id="faceid-height" type="number" value="1024" min="512" max="1280" step="64"></label></div>
+    <div class="two-col"><label>Steps<input id="faceid-steps" type="number" value="28" min="12" max="50"></label><label>Guidance<input id="faceid-guidance" type="number" value="5.5" min="3.5" max="8" step=".5"></label></div>
+    <label>Seed<div class="seed-row"><input id="faceid-seed" type="number" value="-1"><button id="faceid-random-seed" class="secondary">Random</button></div></label>
+  </div>
+  <button id="faceid-generate" class="primary wide generate-big">✦ Generate full scene</button>
+  <div id="faceid-status" class="status"></div>
+  <div id="faceid-setup-status" class="field-help"></div>
+</div>
+
+<div id="studio-inpaint-panel" class="studio-panel hidden">
+  <div class="control-section">
+    <div class="section-title">Stable Diffusion Inpainting</div>
+    <p class="field-help">Paint only the area you want changed. Everything outside the mask is preserved and composited back unchanged.</p>
+    <div id="inpaint-model-status" class="status">Checking inpainting model…</div>
+    <label class="upload-drop" id="inpaint-drop"><input id="inpaint-file" type="file" accept="image/png,image/jpeg,image/webp"><span class="upload-icon">＋</span><strong>Choose source image</strong><span class="field-help">PNG, JPG or WebP</span></label>
+    <div class="two-col"><button id="inpaint-use-current" class="secondary">Use current image</button><button id="inpaint-clear" class="secondary">Clear</button></div>
+  </div>
+  <div class="control-section">
+    <div class="section-title">Mask</div>
+    <div class="inpaint-canvas-wrap"><canvas id="inpaint-canvas"></canvas></div>
+    <div class="inpaint-tools"><label>Brush <input id="inpaint-brush" type="range" min="5" max="160" value="48"></label><strong id="inpaint-brush-value">48</strong><button id="inpaint-erase" class="secondary">Erase</button><button id="inpaint-clear-mask" class="secondary">Clear mask</button><button id="inpaint-fill-mask" class="secondary">Fill mask</button></div>
+    <p class="field-help">White = edit. Black = preserve. Paint the complete area to replace. The model receives a small hidden context expansion, while the final composite restores every unmasked pixel.</p>
+  </div>
+  <div class="control-section">
+    <div class="section-title">Edit instruction</div>
+    <label>What should replace the masked area?<textarea id="inpaint-prompt" rows="5" placeholder="Replace the shirt with a black leather jacket, matching the lighting and perspective."></textarea></label>
+    <div class="prompt-tools"><button id="inpaint-optimize" class="secondary">✦ Optimize with Dolphin</button><button id="inpaint-copy-prompt" class="secondary">Copy from Normal</button></div>
+    <label>Negative prompt<textarea id="inpaint-negative" rows="3" placeholder="Optional. Keep concise. newAIr adds a baseline automatically."></textarea></label>
+  </div>
+  <div class="control-section">
+    <div class="section-title">Precision</div>
+    <label>Edit quality<select id="inpaint-quality"><option value="precise">Precise</option><option value="balanced" selected>Balanced</option><option value="creative">Creative</option></select></label>
+    <div class="two-col"><label>Steps<input id="inpaint-steps" type="number" value="30" min="12" max="50"></label><label>Guidance<input id="inpaint-guidance" type="number" value="5.5" min="3.5" max="7" step=".5"></label></div>
+    <div class="two-col"><label>Context padding<input id="inpaint-padding" type="number" value="96" min="0" max="512" step="8"></label><label>Mask feather<input id="inpaint-feather" type="number" value="4" min="0" max="24"></label></div>
+    <label>Mask expansion<input id="inpaint-expand" type="number" value="8" min="0" max="48"></label>
+    <label>Sampler<select id="inpaint-sampler"><option>DPM++ 2M Karras</option><option>Euler A</option><option>DDIM</option></select></label>
+    <label>Seed<div class="seed-row"><input id="inpaint-seed" type="number" value="-1"><button id="inpaint-random-seed" class="secondary">Random</button></div></label>
+  </div>
+  <button id="inpaint-generate" class="primary wide generate-big">✦ Inpaint selected area</button>
+  <div id="inpaint-status" class="status"></div>
+</div>
+
+<div id="studio-normal-panel" class="studio-panel hidden">
+  <div class="control-section">
+    <div class="section-title">Prompt</div>
+    <div class="prompt-grid"><label>Subject<input id="prompt-subject" placeholder="young woman"></label><label>Environment<input id="prompt-environment" placeholder="rainy Tokyo street"></label><label>Lighting<input id="prompt-lighting" placeholder="neon cinematic lighting"></label><label>Camera<input id="prompt-camera" placeholder="35mm, medium shot"></label></div>
+    <label>Style<select id="image-style">
+      <option value="photorealistic">Photorealistic</option><option value="cinematic">Cinematic</option><option value="editorial">Editorial</option><option value="digital_illustration">Digital illustration</option><option value="pencil_drawing">Pencil drawing</option><option value="watercolor">Watercolor</option><option value="comic">Comic</option><option value="anime_inspired">Anime-inspired</option><option value="fantasy_art">Fantasy concept art</option>
+    </select></label>
+    <p class="field-help">Styles are prompt presets. True anime quality requires an anime checkpoint or LoRA.</p>
+    <label>Prompt<textarea id="image-prompt" rows="6" placeholder="Describe the image you want…"></textarea></label>
+    <div class="prompt-tools"><button id="build-prompt" class="secondary">Build prompt</button><button id="enhance-prompt" class="secondary">✦ Enhance with Dolphin</button></div>
+    <div class="token-meter"><span id="prompt-token-label">Prompt tokens: —</span><div><i id="prompt-token-bar"></i></div></div>
+    <label>Negative prompt<textarea id="image-negative" rows="3" placeholder="Optional. newAIr adds an anatomy-safe baseline automatically."></textarea></label>
+  </div>
+</div>
+
+<details class="advanced-image-settings">
+  <summary>Quality &amp; advanced settings</summary>
+  <div class="advanced-body">
+    <div class="control-section">
+      <div class="section-title">Quality</div>
+      <div class="preset-row"><button class="quality-btn" data-quality="fast">Fast</button><button class="quality-btn active" data-quality="balanced">Balanced</button><button class="quality-btn" data-quality="high">High</button></div>
+      <label>Aspect ratio<select id="image-aspect"><option value="1:1">1:1 Square</option><option value="4:3">4:3 Landscape</option><option value="3:4">3:4 Portrait</option><option value="16:9" selected>16:9 Cinematic</option><option value="9:16">9:16 Vertical</option><option value="21:9">21:9 Wide</option><option value="custom">Custom</option></select></label>
+      <div class="two-col"><label>Width<input id="image-width" type="number" value="1024" min="256" step="8"></label><label>Height<input id="image-height" type="number" value="576" min="256" step="8"></label></div>
+      <div class="two-col"><label>Steps<input id="image-steps" type="number" value="28" min="1" max="60"></label><label>Guidance<input id="image-guidance" type="number" value="5.5" step=".5"></label></div>
+      <label>Sampler<select id="image-sampler"></select></label>
+      <label>Seed<div class="seed-row"><input id="image-seed" type="number" value="-1"><button id="random-seed" class="secondary">Random</button><button id="lock-seed" class="secondary">🔓</button></div></label>
+      <label class="check-row"><input id="image-hires" type="checkbox"> Hires refinement <span class="field-help">Use only for final quality.</span></label>
+      <div id="hires-options" class="two-col hidden"><label>Scale<input id="hires-scale" type="number" value="1.5" min="1.15" max="2" step=".05"></label><label>Denoise<input id="hires-denoise" type="number" value="0.30" min=".1" max=".7" step=".05"></label></div>
+      <label>Batch <input id="image-batch" type="number" value="1" min="1" max="4"></label>
     </div>
   </div>
-  <div class="mask-tools">
-    <label>Brush size<input id="inpaint-brush-size" type="range" min="5" max="180" step="1" value="55"></label>
-    <button id="inpaint-clear" type="button" class="secondary">Clear mask</button>
-    <button id="inpaint-fill" type="button" class="secondary">Fill mask</button>
-  </div>
-  <p class="field-help">Paint white over anything you want the AI to replace.</p>
+</details>
+
+<button id="generate-image" class="primary wide generate-big">Generate</button>
 </div>
-<label id="edit-strength-field" class="hidden">Edit strength<input id="image-strength" type="range" min="0.05" max="0.95" step="0.01" value="0.55"><span id="image-strength-value">0.55</span></label>
-<label>Use image for character<select id="image-character-select"><option value="">Select a character…</option></select></label>
-<div id="image-status" class="status"></div>
-<label>Prompt<textarea id="image-prompt" rows="6" placeholder="Describe the image you want…"></textarea></label>
-<label>Negative prompt<textarea id="image-negative" rows="3" placeholder="Things to avoid…"></textarea></label>
-<div class="two-col"><label>Width<input id="image-width" type="number" value="512" min="256" step="64"></label><label>Height<input id="image-height" type="number" value="512" min="256" step="64"></label></div>
-<div class="two-col"><label>Steps<input id="image-steps" type="number" value="24" min="1" max="60"></label><label>Guidance<input id="image-guidance" type="number" value="5" step=".5"></label></div>
-<label>Seed<input id="image-seed" type="number" value="-1"></label>
-<p class="muted">RTX 3050 6GB: start at 512×512.</p><button id="generate-image" class="primary wide">Generate</button>
+<div class="image-result card">
+<div id="edit-source-preview" class="hidden"><div class="section-label">Source image</div><img id="source-image-preview" alt="Source preview"></div>
+<div id="image-placeholder"><div class="image-placeholder-icon">✦</div><h3>Your image will appear here</h3><p>Choose a model, describe a scene, then generate.</p></div>
+<img id="generated-image" class="hidden" alt="Generated locally">
+<div id="image-actions" class="image-actions hidden"><button id="regenerate-image">↻ Regenerate</button><button id="set-avatar-image">Set as avatar</button><button id="crop-generated-image">Adjust crop</button><button id="favorite-image">☆ Favorite</button><button id="remix-image">♻ Remix</button></div>
+<div id="generation-info" class="generation-info hidden"></div>
+<div class="gallery-wrap"><div class="gallery-head"><div><div class="section-title">Generation history</div><span class="muted">Every result keeps its settings.</span></div><button id="refresh-gallery" class="secondary">Refresh</button></div><div id="image-gallery" class="image-gallery"></div></div>
 </div>
-<div class="image-result card"><div id="edit-source-preview" class="hidden"><div class="section-label">Source image</div><img id="source-image-preview" alt="Source preview"></div><div id="image-placeholder"><div class="image-placeholder-icon">✦</div><h3>Your image will appear here</h3><p>Generated entirely on your machine.</p></div><img id="generated-image" class="hidden" alt="Generated locally"><div id="image-actions" class="image-actions hidden"><button id="regenerate-image">↻ Regenerate</button><button id="crop-generated-image">Crop</button><button id="use-character-image">Use for character</button></div></div>
+</div>
 </div></section>
 </main>
 </div>
 
-<div id="char-modal" class="modal hidden"><div class="modal-box character-editor">
-<div class="editor-head"><div><div class="eyebrow">CHARACTER</div><h2 id="char-modal-title">New Character</h2></div><button id="char-cancel-btn" class="icon-close">×</button></div>
-<div class="editor-tabs"><button class="editor-tab active" data-tab="char-general">General</button><button class="editor-tab" data-tab="char-definition">Definition</button></div>
+<div id="char-modal" class="modal hidden"><div class="modal-box character-editor janitor-editor">
+<div class="editor-head"><div><div class="eyebrow">CHARACTER</div><h2 id="char-modal-title">New Character</h2><p class="muted">Define how your character looks, speaks and behaves.</p></div><button id="char-cancel-btn" class="icon-close">×</button></div>
+<div class="editor-tabs janitor-tabs">
+<button class="editor-tab active" data-tab="char-general">General</button>
+<button class="editor-tab" data-tab="char-definition">Definition</button>
+<button class="editor-tab" data-tab="char-visual">Visual</button>
+</div>
 <section id="char-general" class="editor-section">
 <label>Name<input id="f-name" maxlength="80" placeholder="Layla"></label>
-<label>Avatar<div class="avatar-input-row"><input id="f-avatar" placeholder="/static/generated/layla.png"><button type="button" id="crop-avatar-btn" class="secondary">Crop / fit</button></div><span class="field-help">Use a square crop to choose exactly what appears in the profile.</span></label>
-<label>Short description<textarea id="f-description" rows="3" placeholder="A short description of the character…"></textarea></label>
-<label>Tags<input id="f-tags" placeholder="family, friendly, curious"></label>
+<label>Avatar<div class="avatar-input-row"><input id="f-avatar" placeholder="/static/generated/layla.png"><button type="button" id="crop-avatar-btn" class="secondary">Crop / fit</button></div></label>
+<label>Short description<textarea id="f-description" rows="3" placeholder="A short public description of the character…"></textarea></label>
+<label>Tags<input id="f-tags" placeholder="friendly, curious, detective"></label>
+<label>Creator notes <span class="optional">private</span><textarea id="f-creator-notes" rows="3" placeholder="Private notes about how you want this character to behave or evolve…"></textarea></label>
+<div class="definition-tip"><b>Tip:</b> Keep the short description readable. Put behavior, rules and speech style in Definition.</div>
 </section>
 <section id="char-definition" class="editor-section hidden">
-<label>Personality<textarea id="f-personality" rows="6" placeholder="Describe the character's personality, behavior and speech style…"></textarea></label>
-<label>Scenario<textarea id="f-scenario" rows="5" placeholder="Describe the current situation and context…"></textarea></label>
-<label>First message<textarea id="f-greeting" rows="7" placeholder="The first message your character sends…"></textarea></label>
-<label>Example dialogue<textarea id="f-example" rows="8" placeholder="{{user}}: Hey, how are you?
-{{char}}: I'm doing pretty well."></textarea></label>
-<label>Advanced definition <span class="optional">optional</span><textarea id="f-system" rows="7" placeholder="Extra instructions or details…"></textarea></label>
-<p class="field-help"><code>{{char}}</code> becomes the character name and <code>{{user}}</code> becomes the active persona name.</p>
+<div class="macro-row"><label>Definition macros<select id="f-macro-help"><option value="">Pronoun / placeholder macros</option><option value="{{char}}">{{char}} → character name</option><option value="{{user}}">{{user}} → active persona name</option></select></label></div>
+<label>Personality <span class="required">*</span><textarea id="f-personality" rows="8" placeholder="Describe personality, behavior, values, quirks, boundaries and speech style…"></textarea></label>
+<label>Scenario<textarea id="f-scenario" rows="5" placeholder="The current circumstances and context of the conversation…"></textarea></label>
+<div class="field-heading"><div><b>Initial messages</b> <span class="optional">up to 10</span><p class="field-help">Messages sent by the character when a new chat starts. The first message is used for legacy greeting compatibility.</p></div><button type="button" id="add-initial-message" class="secondary">＋ Add message</button></div>
+<div id="initial-messages-list" class="initial-messages-list"></div>
+<label>Example dialogue<textarea id="f-example" rows="9" placeholder="{{char}}: Hey, I'm glad you came.
+{{user}}: Hello.
+{{char}}: What brings you here?"></textarea></label>
+<p class="field-help">Example dialogue teaches voice and behavior. It is guidance, not a script.</p>
+<label>Advanced definition <span class="optional">optional</span><textarea id="f-system" rows="8" placeholder="Additional rules, roleplay instructions, speech constraints, lore, formatting rules…"></textarea></label>
+</section>
+<section id="char-visual" class="editor-section hidden">
+<div class="section-title editor-subtitle">Visual identity</div>
+<label>Appearance<textarea id="f-appearance" rows="6" placeholder="Face, hair, body, clothing, colors, distinguishing features…"></textarea></label>
+<label>Background<textarea id="f-background" rows="5" placeholder="History, environment and visual context…"></textarea></label>
+<label>Visual style<textarea id="f-visual-style" rows="3" placeholder="Cinematic realism, anime, editorial photography…"></textarea></label>
+<label>Default negative prompt<textarea id="f-negative-prompt" rows="3" placeholder="Things this character's images should avoid…"></textarea></label>
+<div class="two-col"><label>Preferred LoRA<input id="f-preferred-lora" placeholder="character_lora.safetensors"></label><label>Image preset<select id="f-image-preset"><option value="fast">Fast</option><option value="balanced" selected>Balanced</option><option value="high">High</option></select></label></div>
+<button type="button" id="editor-generate-portrait" class="primary wide">✦ Generate portrait from this character</button>
+<p class="field-help">newAIr turns the character definition into a visual prompt automatically.</p>
 </section>
 <div class="modal-actions"><button id="char-delete-btn" class="danger-btn hidden">Delete</button><span class="modal-spacer"></span><button id="char-cancel-btn-bottom" class="secondary">Cancel</button><button id="char-save-btn">Save character</button></div>
 </div></div>
+
+<div id="ai-helper-modal" class="modal hidden"><div class="modal-box ai-helper-modal"><div class="editor-head"><div><div class="eyebrow">WRITING TOOLS</div><h2 id="ai-helper-title">Writing assistant</h2></div><button id="ai-helper-close" class="icon-close">×</button></div><textarea id="ai-helper-result" rows="12" placeholder="Generated text…"></textarea><div class="modal-actions"><span class="modal-spacer"></span><button id="ai-helper-copy" class="secondary">Copy</button><button id="ai-helper-insert" class="primary">Insert into draft</button></div></div></div>
+<div id="chat-settings-modal" class="modal hidden"><div class="modal-box chat-settings-modal"><div class="editor-head"><div><div class="eyebrow">CHARACTER CHAT</div><h2>Chat settings</h2><span class="muted">Control how long each character reply can be.</span></div><button id="chat-settings-close" class="icon-close">×</button></div><div class="settings-section"><label>Response length<select id="response-length"><option value="short">Short · ~100–180 tokens</option><option value="standard">Standard · ~200–350 tokens</option><option value="long">Long · ~400–650 tokens</option><option value="very_long">Very long · ~700–1000 tokens</option><option value="custom">Custom</option></select></label><div id="custom-response-wrap" class="hidden"><label>Maximum response tokens<input id="custom-response-tokens" type="number" min="64" max="2048" step="16" value="400"></label></div><p class="field-help">This sets the maximum number of generated tokens. The character may still finish earlier naturally.</p></div><div class="modal-actions"><span class="modal-spacer"></span><button id="chat-settings-save" class="primary">Save settings</button></div></div></div>
 
 <div id="persona-modal" class="modal hidden"><div class="modal-box persona-editor">
 <div class="editor-head"><div><div class="eyebrow">PERSONAS</div><h2>My Personas</h2><p class="muted">Create a simple identity you can use across chats.</p></div><button id="persona-close" class="icon-close">×</button></div>
@@ -130,6 +306,16 @@
 <div class="modal-actions"><span class="modal-spacer"></span><button id="crop-cancel" class="secondary">Cancel</button><button id="crop-apply">Apply crop</button></div>
 </div></div>
 
+<div id="scene-modal" class="modal hidden"><div class="modal-box large scene-editor">
+<div class="editor-head"><div><div class="eyebrow">SCENE BUILDER</div><h2>Build a scene</h2><p class="muted">Turn structured scene details into a diffusion-ready prompt.</p></div><button id="scene-close" class="icon-close">×</button></div>
+<div class="two-col"><label>Location<input id="scene-location" placeholder="Rainy Tokyo street"></label><label>Time<input id="scene-time" placeholder="Late night"></label></div>
+<div class="two-col"><label>Weather<input id="scene-weather" placeholder="Light rain"></label><label>Lighting<input id="scene-lighting" placeholder="Neon reflections"></label></div>
+<label>Action / pose<input id="scene-action" placeholder="Walking together, looking toward the camera"></label>
+<label>Expression<input id="scene-expression" placeholder="Calm, slightly amused"></label>
+<label>Camera<input id="scene-camera" placeholder="35mm, medium full-body shot, shallow depth of field"></label>
+<label>Style<input id="scene-style" placeholder="Cinematic realistic photography"></label>
+<div class="modal-actions"><span class="modal-spacer"></span><button id="scene-build">Build into prompt</button></div>
+</div></div>
 <div id="model-modal" class="modal hidden"><div class="modal-box"><div class="editor-head"><h2>LLM Model Manager</h2><button id="model-close" class="icon-close">×</button></div><p class="muted">Drop GGUF models into <code id="models-dir-path"></code>.</p><div id="model-list" class="scroll-list small"></div><p id="model-loaded" class="status"></p></div></div>
 <script src="/static/js/app.js"></script>
 </body></html>

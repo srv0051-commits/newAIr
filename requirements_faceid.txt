@@ -1,0 +1,9 @@
+# Optional additions for newAIr Face → Full Scene
+# Install these inside the existing newAIr venv.
+diffusers>=0.30
+transformers>=4.40
+accelerate>=0.30
+safetensors>=0.4
+opencv-python
+insightface
+onnxruntime-gpu

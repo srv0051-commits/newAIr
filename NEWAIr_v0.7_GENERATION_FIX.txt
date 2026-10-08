@@ -1,0 +1,28 @@
+newAIr v0.7 - Generation Cleanup + LLM Loader Fix
+
+WHAT CHANGED
+1. Image Studio is split into two clean modes:
+   - Character & Scene: character portraits and character scenario images.
+   - Normal Prompt: ordinary prompt-based image generation.
+2. Character portraits default to portrait framing; scenarios default to cinematic 16:9.
+3. Added automatic anatomy/quality negative prompting for image generation.
+4. Character generations get an extra consistency/anatomy prompt block.
+5. Hires refinement is capped to safer scale/denoise ranges.
+6. Random seeds are now converted to real reproducible seeds and returned to the UI.
+7. LLM model switching now releases the previous GGUF before loading another one.
+8. GGUF files are checked for a valid GGUF header and suspiciously tiny files are rejected.
+9. If a GPU GGUF load fails, newAIr makes one CPU-load retry and reports the original error.
+10. Model Manager now shows a useful load error instead of only the generic Flask 500 page.
+
+INSTALL
+- Keep your existing venv, data folder, image_models, models_dir, loras and generated images.
+- Copy the files from this package over the matching files in your existing newAIr folder.
+- Do NOT replace data/newair.db.
+- Restart the app after copying.
+
+LLM ERROR
+The old loader could try to load the new GGUF while Dolphin was still resident. This can cause llama.cpp to return only:
+  Failed to load model from file
+The new loader releases the old model first. If the new GGUF still fails, the UI will now show whether the file is invalid/incomplete, incompatible, or failing due to RAM/VRAM.
+
+For your RTX 3050 6 GB, keep one 8B Q4 GGUF loaded at a time.
